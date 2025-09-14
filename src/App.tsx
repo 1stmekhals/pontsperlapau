@@ -7,6 +7,7 @@ import { ClassProvider } from './contexts/ClassContext';
 import { BookRequestProvider } from './contexts/BookRequestContext';
 import { FeedbackProvider } from './contexts/FeedbackContext';
 import { ActivityProvider } from './contexts/ActivityContext';
+import { ClassEnrollmentProvider } from './contexts/ClassEnrollmentContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
