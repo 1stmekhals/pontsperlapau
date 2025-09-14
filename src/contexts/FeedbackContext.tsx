@@ -12,6 +12,7 @@ interface FeedbackContextType {
   addFeedback: (feedbackData: Omit<StudentFeedback, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateFeedback: (feedbackId: string, feedbackData: Partial<StudentFeedback>) => Promise<void>;
   deleteFeedback: (feedbackId: string) => Promise<void>;
+  getFeedbackByStudentAndClass: (studentId: string, classId: string) => Promise<StudentFeedback | null>;
 }
 
 const FeedbackContext = createContext<FeedbackContextType | null>(null);
@@ -104,13 +105,22 @@ export function FeedbackProvider({ children }: FeedbackProviderProps) {
     try {
       await feedbackService.deleteFeedback(feedbackId, authUser.id);
       setFeedbacks(prev => prev.filter(feedback => feedback.id !== feedbackId));
-      await fetchActivities({ limit: 10 });
+      await fetchActivities();
     } catch (error) {
       console.error('Error deleting feedback:', error);
       throw error;
     }
   };
 
+  const getFeedbackByStudentAndClass = async (studentId: string, classId: string): Promise<StudentFeedback | null> => {
+    try {
+      const classFeeds = await feedbackService.getClassFeedbacks(classId);
+      return classFeeds.find(f => f.studentId === studentId) || null;
+    } catch (error) {
+      console.error('Error getting feedback:', error);
+      return null;
+    }
+  };
   const value = {
     feedbacks,
     loading,
@@ -118,7 +128,8 @@ export function FeedbackProvider({ children }: FeedbackProviderProps) {
     fetchStudentFeedbacks,
     addFeedback,
     updateFeedback,
-    deleteFeedback
+    deleteFeedback,
+    getFeedbackByStudentAndClass
   };
 
   return (

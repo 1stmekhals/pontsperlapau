@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { userService } from '../services/userService';
+import { User } from '../types/User';
 import { useActivity } from './ActivityContext';
 import { useAuth } from './AuthContext';
 
@@ -61,12 +63,10 @@ export function UserProvider({ children }: UserProviderProps) {
   const fetchUsers = React.useCallback(async () => {
     setLoading(true);
     try {
-      // Mock implementation - replace with actual service call
-      const fetchedUsers: User[] = [];
+      const fetchedUsers = await userService.getAllUsers();
       setUsers(fetchedUsers);
       
       // Also update role-specific lists
-      setStaffUsers(fetchedUsers.filter(u => u.role === 'staff'));
       // Include admins in staff view since admins are also staff members
       setStaffUsers(fetchedUsers.filter(u => u.role === 'staff' || u.role === 'admin'));
       setStudentUsers(fetchedUsers.filter(u => u.role === 'student'));
@@ -81,8 +81,7 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const fetchPendingUsers = React.useCallback(async () => {
     try {
-      // Mock implementation - replace with actual service call
-      const pending: User[] = [];
+      const pending = await userService.getPendingUsers();
       console.log('UserContext.fetchPendingUsers - Count:', pending.length);
       console.log('UserContext.fetchPendingUsers - Users:', pending);
       setPendingUsers(pending);
@@ -101,8 +100,7 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const fetchUsersByRole = React.useCallback(async (role: string) => {
     try {
-      // Mock implementation - replace with actual service call
-      const roleUsers: User[] = [];
+      const roleUsers = await userService.getUsersByRole(role);
       switch (role) {
         case 'staff':
           setStaffUsers(roleUsers);
@@ -126,8 +124,8 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const approveUser = React.useCallback(async (userId: string) => {
     try {
-      // Mock implementation - replace with actual service call
-      console.log('Approving user:', userId);
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await userService.approveUser(userId, authUser.id);
       await fetchUsers();
       await fetchPendingUsers();
     } catch (error) {
@@ -138,8 +136,8 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const rejectUser = React.useCallback(async (userId: string) => {
     try {
-      // Mock implementation - replace with actual service call
-      console.log('Rejecting user:', userId);
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await userService.rejectUser(userId, authUser.id);
       await fetchPendingUsers();
     } catch (error) {
       console.error('Error rejecting user:', error);
@@ -148,27 +146,42 @@ export function UserProvider({ children }: UserProviderProps) {
   }, [fetchPendingUsers]);
 
   const updateUser = React.useCallback(async (userId: string, userData: Partial<User>) => {
-    // Mock implementation - replace with actual service call
-    console.log('Updating user:', userId, userData);
+    try {
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await userService.updateUser(userId, userData, authUser.id);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
     await fetchUsers();
   }, [fetchUsers]);
 
   const deleteUser = React.useCallback(async (userId: string) => {
-    // Mock implementation - replace with actual service call
-    console.log('Deleting user:', userId);
+    try {
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await userService.deleteUser(userId, authUser.id);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
     await fetchUsers();
   }, [fetchUsers]);
 
   const promoteToAdmin = React.useCallback(async (userId: string) => {
-    // Mock implementation - replace with actual service call
-    console.log('Promoting user to admin:', userId);
+    try {
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await userService.promoteToAdmin(userId, authUser.id);
+    } catch (error) {
+      console.error('Error promoting user:', error);
+      throw error;
+    }
     await fetchUsers();
   }, [fetchUsers]);
 
   const addUser = React.useCallback(async (userData: Partial<User>) => {
     try {
-      // Mock implementation - replace with actual service call
-      console.log('Adding user:', userData);
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await userService.addUser(userData, authUser.id);
       await fetchUsers();
     } catch (error) {
       console.error('UserContext.addUser - Error:', error);

@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState } from 'react';
+import { classService } from '../services/classService';
 import { supabase } from '../lib/supabase';
-import { Class } from '../types';
+import { Class } from '../types/Class';
+import { useAuth } from './AuthContext';
 
 interface ClassContextType {
   classes: Class[];
   loading: boolean;
   fetchClasses: () => Promise<Class[]>;
-  createClass: (classData: Partial<Class>) => Promise<void>;
+  addClass: (classData: Partial<Class>) => Promise<void>;
   updateClass: (classId: string, classData: Partial<Class>) => Promise<void>;
   deleteClass: (classId: string) => Promise<void>;
   enrollStudent: (classId: string, studentId: string) => Promise<void>;
@@ -16,19 +18,14 @@ interface ClassContextType {
 const ClassContext = createContext<ClassContextType | undefined>(undefined);
 
 export function ClassProvider({ children }: { children: React.ReactNode }) {
+  const { authUser } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchClasses = async (): Promise<Class[]> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('classes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      const fetchedClasses = data || [];
+      const fetchedClasses = await classService.getAllClasses();
       setClasses(fetchedClasses);
       return fetchedClasses;
     } catch (error) {
@@ -39,13 +36,10 @@ export function ClassProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const createClass = async (classData: Partial<Class>) => {
+  const addClass = async (classData: Partial<Class>) => {
     try {
-      const { error } = await supabase
-        .from('classes')
-        .insert([classData]);
-
-      if (error) throw error;
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await classService.createClass(classData, authUser.id);
       await fetchClasses();
     } catch (error) {
       console.error('Error creating class:', error);
@@ -55,12 +49,8 @@ export function ClassProvider({ children }: { children: React.ReactNode }) {
 
   const updateClass = async (classId: string, classData: Partial<Class>) => {
     try {
-      const { error } = await supabase
-        .from('classes')
-        .update(classData)
-        .eq('id', classId);
-
-      if (error) throw error;
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await classService.updateClass(classId, classData, authUser.id);
       await fetchClasses();
     } catch (error) {
       console.error('Error updating class:', error);
@@ -70,12 +60,8 @@ export function ClassProvider({ children }: { children: React.ReactNode }) {
 
   const deleteClass = async (classId: string) => {
     try {
-      const { error } = await supabase
-        .from('classes')
-        .delete()
-        .eq('id', classId);
-
-      if (error) throw error;
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await classService.deleteClass(classId, authUser.id);
       await fetchClasses();
     } catch (error) {
       console.error('Error deleting class:', error);
@@ -85,39 +71,8 @@ export function ClassProvider({ children }: { children: React.ReactNode }) {
 
   const enrollStudent = async (classId: string, studentId: string) => {
     try {
-      // Get current class data
-      const { data: currentClass, error: fetchError } = await supabase
-        .from('classes')
-        .select('enrolled_students, current_students, max_students')
-        .eq('id', classId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const enrolledStudents = currentClass.enrolled_students || [];
-      
-      // Check if student is already enrolled
-      if (enrolledStudents.includes(studentId)) {
-        throw new Error('Student already enrolled');
-      }
-
-      // Check if class is full
-      if (currentClass.current_students >= currentClass.max_students) {
-        throw new Error('Class is full');
-      }
-
-      // Add student to enrolled list
-      const updatedEnrolledStudents = [...enrolledStudents, studentId];
-
-      const { error } = await supabase
-        .from('classes')
-        .update({
-          enrolled_students: updatedEnrolledStudents,
-          current_students: updatedEnrolledStudents.length
-        })
-        .eq('id', classId);
-
-      if (error) throw error;
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await classService.enrollStudent(classId, studentId, authUser.id);
       await fetchClasses();
     } catch (error) {
       console.error('Error enrolling student:', error);
@@ -127,29 +82,8 @@ export function ClassProvider({ children }: { children: React.ReactNode }) {
 
   const unenrollStudent = async (classId: string, studentId: string) => {
     try {
-      // Get current class data
-      const { data: currentClass, error: fetchError } = await supabase
-        .from('classes')
-        .select('enrolled_students')
-        .eq('id', classId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const enrolledStudents = currentClass.enrolled_students || [];
-      
-      // Remove student from enrolled list
-      const updatedEnrolledStudents = enrolledStudents.filter((id: string) => id !== studentId);
-
-      const { error } = await supabase
-        .from('classes')
-        .update({
-          enrolled_students: updatedEnrolledStudents,
-          current_students: updatedEnrolledStudents.length
-        })
-        .eq('id', classId);
-
-      if (error) throw error;
+      if (!authUser?.id) throw new Error('Not authenticated');
+      await classService.unenrollStudent(classId, studentId, authUser.id);
       await fetchClasses();
     } catch (error) {
       console.error('Error unenrolling student:', error);
@@ -161,7 +95,7 @@ export function ClassProvider({ children }: { children: React.ReactNode }) {
     classes,
     loading,
     fetchClasses,
-    createClass,
+    addClass,
     updateClass,
     deleteClass,
     enrollStudent,
@@ -179,6 +113,13 @@ export function useClass() {
   const context = useContext(ClassContext);
   if (context === undefined) {
     throw new Error('useClass must be used within a ClassProvider');
+  }
+  return context;
+}
+export function useClasses() {
+  const context = useContext(ClassContext);
+  if (context === undefined) {
+    throw new Error('useClasses must be used within a ClassProvider');
   }
   return context;
 }

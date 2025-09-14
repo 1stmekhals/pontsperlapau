@@ -5,7 +5,7 @@ import { Activity } from '../types';
 interface ActivityContextType {
   activities: Activity[];
   loading: boolean;
-  fetchActivities: () => Promise<void>;
+  fetchActivities: (options?: { limit?: number }) => Promise<void>;
   createActivity: (activityData: Partial<Activity>) => Promise<void>;
 }
 
@@ -15,15 +15,21 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (options?: { limit?: number }) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('activities')
         .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(100);
+        .order('timestamp', { ascending: false });
 
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      } else {
+        query = query.limit(100);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setActivities(data || []);
     } catch (error) {

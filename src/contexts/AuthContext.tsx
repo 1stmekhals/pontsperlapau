@@ -4,6 +4,7 @@ import { User } from '../types/User';
 
 interface AuthContextType {
   user: User | null;
+  authUser: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   
   const value = {
     user,
+    authUser: user,
     loading,
     login,
     register,
