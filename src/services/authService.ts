@@ -203,7 +203,7 @@ export const authService = {
     }
   },
 
-  async verifyToken(token: string) {
+  async verifyToken() {
     console.log('🔍 AuthService.verifyToken - Verifying token');
     
     try {

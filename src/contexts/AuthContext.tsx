@@ -37,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const userData = await authService.verifyToken(token);
+          const userData = await authService.verifyToken();
           setUser(userData);
         }
       } catch (error) {
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const userData = await authService.verifyToken(token);
+        const userData = await authService.verifyToken();
         setUser(userData);
       }
     } catch (error) {
