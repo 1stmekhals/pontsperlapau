@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import PendingApproval from './pages/PendingApproval';
 import SetupPassword from './pages/SetupPassword';
 import ForgotPassword from './pages/ForgotPassword';
+import EmailConfirmed from './pages/EmailConfirmed';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode, roles: string[] }) {
@@ -136,6 +137,7 @@ function AppRouter() {
       <Route path="/forgot-password" element={
         user ? <DashboardRedirect /> : <ForgotPassword />
       } />
+      <Route path="/email-confirmed" element={<EmailConfirmed />} />
       
       <Route path="/admin/*" element={
         <ProtectedRoute roles={['admin']}>

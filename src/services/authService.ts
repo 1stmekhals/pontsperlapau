@@ -186,7 +186,7 @@ export const authService = {
         email: email.toLowerCase().trim(),
         password: password,
         options: {
-          emailRedirectTo: undefined // Disable email confirmation
+          emailRedirectTo: `${window.location.origin}/email-confirmed`
         }
       });
 
