@@ -11,7 +11,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/admin/Dashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import VisitorDashboard from './pages/VisitorDashboard';
