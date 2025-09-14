@@ -179,11 +179,6 @@ export const authService = {
         throw new Error('No account found with this email address.');
       }
 
-      // Check if user is approved
-      if (userData.status !== 'approved') {
-        throw new Error('Account not approved. Please contact administration.');
-      }
-
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
