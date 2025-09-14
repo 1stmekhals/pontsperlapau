@@ -1,56 +1,60 @@
 import { supabase } from '../lib/supabase';
-import { isSupabaseReady } from '../lib/supabase';
 import { User } from '../types/User';
 
 export const authService = {
   async login(email: string, password: string) {
     console.log('🔐 AuthService.login - Attempting login for:', email);
 
-    // If Supabase is not configured, use mock authentication
-    if (!isSupabaseReady) {
-      console.log('🔧 AuthService.login - Using mock mode (Supabase not configured)');
-      
-      // Mock user data for demo purposes
-      const mockUser: User = {
-        id: 'mock-admin-id',
-        email: email,
-        role: 'admin',
-        status: 'approved',
-        name: 'Demo',
-        lastName: 'Admin',
-        fatherName: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      return {
-        user: mockUser,
-        token: `mock-token-${Date.now()}`
-      };
-    }
-
     try {
-      // Query the users table to find the user
+      // First, try to sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password: password
+      });
+
+      if (authError) {
+        console.error('❌ Supabase Auth error:', authError);
+        
+        // If user doesn't exist in auth, check if they exist in users table
+        if (authError.message.includes('Invalid login credentials')) {
+          // Query the users table to see if user exists but hasn't set up auth
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email.toLowerCase().trim())
+            .maybeSingle();
+
+          if (userError) {
+            console.error('❌ Database query error:', userError);
+            throw new Error('Database error occurred. Please try again.');
+          }
+
+          if (userData) {
+            // User exists in database but not in auth - needs password setup
+            throw new Error('SETUP_PASSWORD_REQUIRED');
+          } else {
+            throw new Error('No account found with this email address. Please check your email or register for a new account.');
+          }
+        }
+        
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user) {
+        throw new Error('Login failed. Please try again.');
+      }
+
+      // Get user data from users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('email', email.toLowerCase().trim())
-        .maybeSingle();
+        .single();
 
-      console.log('📊 Database query result:', { userData, userError });
-
-      if (userError && userError.code !== 'PGRST116') {
+      if (userError) {
         console.error('❌ Database query error:', userError);
-        throw new Error('Database error occurred. Please try again.');
+        throw new Error('Failed to load user data. Please try again.');
       }
-
-      if (!userData) {
-        console.log('❌ No user found with email:', email);
-        
-        throw new Error('No account found with this email address. Please check your email or register for a new account.');
-      }
-
-      console.log('✅ User found:', userData.email, 'Status:', userData.status, 'Role:', userData.role);
 
       // Check user status
       if (userData.status === 'pending') {
@@ -59,21 +63,6 @@ export const authService = {
         throw new Error('Your account has been rejected. Please contact administration.');
       } else if (userData.status !== 'approved') {
         throw new Error('Account not approved. Please contact administration.');
-      }
-
-      // Check if user needs to set up password (first time login)
-      // For demo purposes, we'll check if they have any activity or if this is their first login
-      // In a real app, you'd have a password_set flag or check if password hash exists
-      const hasPassword = true;
-      
-      if (!hasPassword) {
-        // User exists but hasn't set up password yet
-        throw new Error('SETUP_PASSWORD_REQUIRED');
-      }
-      
-      // Validate password for existing users
-      if (!password || password.length < 6) {
-        throw new Error('Invalid password');
       }
 
       // Convert database user to application User type
@@ -111,7 +100,7 @@ export const authService = {
 
       return {
         user,
-        token: `token-${user.id}-${Date.now()}`
+        token: authData.session?.access_token || `token-${user.id}-${Date.now()}`
       };
     } catch (error) {
       console.error('❌ AuthService.login - Error:', error);
@@ -122,12 +111,6 @@ export const authService = {
   async register(userData: any) {
     console.log('📝 AuthService.register - Registering user:', userData);
     
-    // If Supabase is not configured, use mock registration
-    if (!isSupabaseReady) {
-      console.log('🔧 AuthService.register - Using mock mode (Supabase not configured)');
-      return { success: true };
-    }
-
     try {
       // Check if user already exists
       const { data: existingUser } = await supabase
@@ -179,12 +162,6 @@ export const authService = {
   async setupPassword(email: string, password: string) {
     console.log('🔐 AuthService.setupPassword - Setting up password for:', email);
 
-    // If Supabase is not configured, use mock setup
-    if (!isSupabaseReady) {
-      console.log('🔧 AuthService.setupPassword - Using mock mode (Supabase not configured)');
-      return { success: true };
-    }
-
     try {
       // Check if user exists in database
       const { data: userData, error: userError } = await supabase
@@ -193,7 +170,7 @@ export const authService = {
         .eq('email', email.toLowerCase().trim())
         .maybeSingle();
 
-      if (userError && userError.code !== 'PGRST116') {
+      if (userError) {
         console.error('❌ Database query error:', userError);
         throw new Error('Database error occurred. Please try again.');
       }
@@ -207,17 +184,17 @@ export const authService = {
         throw new Error('Account not approved. Please contact administration.');
       }
 
-      // Update user to indicate password has been set
-      // In a real app, you'd hash and store the actual password
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ 
-          updated_at: new Date().toISOString(),
-          activity_history: 'Password set up by user'
-        })
-        .eq('id', userData.id);
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password: password,
+        options: {
+          emailRedirectTo: undefined // Disable email confirmation
+        }
+      });
 
-      if (updateError) {
+      if (authError) {
+        console.error('❌ Auth signup error:', authError);
         throw new Error('Failed to set password. Please try again.');
       }
 
@@ -232,93 +209,58 @@ export const authService = {
   async verifyToken(token: string) {
     console.log('🔍 AuthService.verifyToken - Verifying token');
     
-    // If Supabase is not configured, use mock verification
-    if (!isSupabaseReady) {
-      console.log('🔧 AuthService.verifyToken - Using mock mode (Supabase not configured)');
-      
-      if (token && token.startsWith('mock-token-')) {
-        const mockUser: User = {
-          id: 'mock-admin-id',
-          email: 'demo@example.com',
-          role: 'admin',
-          status: 'approved',
-          name: 'Demo',
-          lastName: 'Admin',
-          fatherName: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        return mockUser;
-      }
-      throw new Error('Invalid token');
-    }
-
     try {
-      // Extract user ID from token (simple demo implementation)
-      if (token && token.startsWith('token-')) {
-        // Extract UUID from token format: token-{uuid}-{timestamp}
-        const tokenPrefix = 'token-';
-        const startIndex = tokenPrefix.length;
-        const lastDashIndex = token.lastIndexOf('-');
-        
-        if (lastDashIndex > startIndex) {
-          const userId = token.substring(startIndex, lastDashIndex);
-          
-          // Validate that userId is a proper UUID format
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (!uuidRegex.test(userId)) {
-            console.error('❌ Invalid UUID format in token:', userId);
-            throw new Error('Invalid token format');
-          }
-          
-          // Fetch user from database
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .eq('status', 'approved')
-            .maybeSingle();
-
-          if (error || !userData) {
-            throw new Error('Invalid token');
-          }
-
-          // Convert to User type
-          const user: User = {
-            id: userData.id,
-            email: userData.email,
-            role: userData.role,
-            status: userData.status,
-            name: userData.name,
-            fatherName: userData.father_name,
-            lastName: userData.last_name,
-            dateOfBirth: userData.date_of_birth,
-            gender: userData.gender,
-            nationalId: userData.national_id,
-            passportNo: userData.passport_no,
-            phone: userData.phone,
-            address: userData.address,
-            parentContact: userData.parent_contact,
-            photo: userData.photo,
-            jobTitle: userData.job_title,
-            jobDescription: userData.job_description,
-            joinDate: userData.join_date,
-            leaveDate: userData.leave_date,
-            educationDocuments: userData.education_documents,
-            cv: userData.cv,
-            activityHistory: userData.activity_history,
-            shortBio: userData.short_bio,
-            classesTeaching: userData.classes_teaching,
-            educationLevel: userData.education_level,
-            createdAt: userData.created_at,
-            updatedAt: userData.updated_at
-          };
-
-          return user;
-        }
-      }
+      // Get current session from Supabase
+      const { data: { session }, error } = await supabase.auth.getSession();
       
-      throw new Error('Invalid token format');
+      if (error || !session) {
+        throw new Error('Invalid token');
+      }
+
+      // Get user data from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+
+      if (userError || !userData) {
+        throw new Error('Invalid token');
+      }
+
+      // Convert to User type
+      const user: User = {
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
+        status: userData.status,
+        name: userData.name,
+        fatherName: userData.father_name,
+        lastName: userData.last_name,
+        dateOfBirth: userData.date_of_birth,
+        gender: userData.gender,
+        nationalId: userData.national_id,
+        passportNo: userData.passport_no,
+        phone: userData.phone,
+        address: userData.address,
+        parentContact: userData.parent_contact,
+        photo: userData.photo,
+        jobTitle: userData.job_title,
+        jobDescription: userData.job_description,
+        joinDate: userData.join_date,
+        leaveDate: userData.leave_date,
+        educationDocuments: userData.education_documents,
+        cv: userData.cv,
+        activityHistory: userData.activity_history,
+        shortBio: userData.short_bio,
+        classesTeaching: userData.classes_teaching,
+        educationLevel: userData.education_level,
+        createdAt: userData.created_at,
+        updatedAt: userData.updated_at
+      };
+
+      return user;
     } catch (error) {
       console.error('❌ AuthService.verifyToken - Error:', error);
       throw error;
