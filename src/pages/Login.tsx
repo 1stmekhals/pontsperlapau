@@ -31,6 +31,11 @@ export default function Login() {
       if (errorMessage === 'SETUP_PASSWORD_REQUIRED') {
         showToast('Please set up your password to access your account', 'info');
         navigate(`/setup-password?email=${encodeURIComponent(formData.email)}`);
+      } else if (errorMessage === 'EMAIL_NOT_CONFIRMED') {
+        showToast(
+          'Please check your email and click the confirmation link to activate your account before logging in.',
+          'error'
+        );
       } else if (errorMessage.includes('No account found')) {
         showToast(
           'No account found with this email. Please check your email address or create a new account.',

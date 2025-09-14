@@ -35,6 +35,8 @@ export const authService = {
           } else {
             throw new Error('No account found with this email address. Please check your email or register for a new account.');
           }
+        } else if (authError.message.includes('Email not confirmed')) {
+          throw new Error('EMAIL_NOT_CONFIRMED');
         }
         
         throw new Error(authError.message);
