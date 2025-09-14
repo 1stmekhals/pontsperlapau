@@ -1,13 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { UserProvider, useUser } from './contexts/UserContext';
-import { LibraryProvider } from './contexts/LibraryContext';
-import { ClassProvider, useClass } from './contexts/ClassContext';
-import { BookRequestProvider } from './contexts/BookRequestContext';
-import { FeedbackProvider } from './contexts/FeedbackContext';
-import { ActivityProvider } from './contexts/ActivityContext';
-import { ClassEnrollmentProvider } from './contexts/ClassEnrollmentContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -15,7 +8,6 @@ import Register from './pages/Register';
 import PendingApproval from './pages/PendingApproval';
 import SetupPassword from './pages/SetupPassword';
 import ForgotPassword from './pages/ForgotPassword';
-import Dashboard from './pages/Dashboard';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode, roles: string[] }) {
@@ -64,6 +56,58 @@ function DashboardRedirect() {
   }
 }
 
+function SimpleDashboard() {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <span className="text-xl font-semibold text-gray-900">
+                Ponts per la Pau - {user?.role?.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">
+                Welcome, {user?.name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Welcome to Ponts per la Pau
+          </h1>
+          <p className="text-gray-600 mb-6">
+            You are logged in as: <strong>{user?.name} {user?.lastName}</strong>
+          </p>
+          <p className="text-gray-600 mb-6">
+            Role: <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">{user?.role}</span>
+          </p>
+          <p className="text-gray-600">
+            Status: <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">{user?.status}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AppRouter() {
   const { user, loading } = useAuth();
 
@@ -95,25 +139,25 @@ function AppRouter() {
       
       <Route path="/admin/*" element={
         <ProtectedRoute roles={['admin']}>
-          <Dashboard />
+          <SimpleDashboard />
         </ProtectedRoute>
       } />
       
       <Route path="/staff/*" element={
         <ProtectedRoute roles={['staff']}>
-          <Dashboard />
+          <SimpleDashboard />
         </ProtectedRoute>
       } />
       
       <Route path="/student/*" element={
         <ProtectedRoute roles={['student']}>
-          <Dashboard />
+          <SimpleDashboard />
         </ProtectedRoute>
       } />
       
       <Route path="/visitor/*" element={
         <ProtectedRoute roles={['visitor']}>
-          <Dashboard />
+          <SimpleDashboard />
         </ProtectedRoute>
       } />
     </Routes>
@@ -124,25 +168,11 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <ActivityProvider>
-          <UserProvider>
-            <FeedbackProvider>
-              <ClassEnrollmentProvider>
-                <BookRequestProvider>
-                  <ClassProvider>
-                    <LibraryProvider>
-                      <Router>
-                        <div className="App">
-                          <AppRouter />
-                        </div>
-                      </Router>
-                    </LibraryProvider>
-                  </ClassProvider>
-                </BookRequestProvider>
-              </ClassEnrollmentProvider>
-            </FeedbackProvider>
-          </UserProvider>
-        </ActivityProvider>
+        <Router>
+          <div className="App">
+            <AppRouter />
+          </div>
+        </Router>
       </AuthProvider>
     </ToastProvider>
   );
