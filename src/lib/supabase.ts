@@ -3,24 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Debug environment variables (only show first/last chars for security)
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Anon Key format:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 10)}...${supabaseAnonKey.substring(supabaseAnonKey.length - 10)}` : 'MISSING');
+// Check if Supabase is properly configured
+const isSupabaseConfigured = supabaseUrl && 
+  supabaseAnonKey && 
+  supabaseUrl !== 'https://your-project-id.supabase.co' &&
+  supabaseAnonKey.startsWith('eyJ') &&
+  !supabaseAnonKey.includes('placeholder');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl);
-  console.error('VITE_SUPABASE_ANON_KEY exists:', !!supabaseAnonKey);
-  throw new Error('Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+if (!isSupabaseConfigured) {
+  console.warn('⚠️ Supabase not configured. Using mock mode.');
+  console.warn('To enable full functionality, please:');
+  console.warn('1. Click "Connect to Supabase" button in the top right');
+  console.warn('2. Or manually update your .env file with real Supabase credentials');
 }
 
-// Validate API key format
-if (!supabaseAnonKey.startsWith('eyJ')) {
-  console.error('❌ Invalid Supabase API key format. The anon key should start with "eyJ"');
-  throw new Error('Invalid Supabase API key format. Please check your VITE_SUPABASE_ANON_KEY in the .env file.');
-}
+// Use placeholder values if not configured
+const finalUrl = isSupabaseConfigured ? supabaseUrl : 'https://placeholder.supabase.co';
+const finalKey = isSupabaseConfigured ? supabaseAnonKey : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(finalUrl, finalKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -32,6 +33,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Export configuration status for components to check
+export const isSupabaseReady = isSupabaseConfigured;
 // Database types
 export interface Database {
   public: {
