@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useUser } from '../contexts/UserContext';
+import { useUsers } from '../contexts/UserContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, loading: authLoading } = useAuth();
-  const { currentUser, loading: userLoading } = useUser();
+  const { currentUser, loading: userLoading } = useUsers();
 
   if (authLoading || userLoading) {
     return (

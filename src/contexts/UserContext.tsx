@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User } from '../types/User';
 import { useActivity } from './ActivityContext';
 import { useAuth } from './AuthContext';
 

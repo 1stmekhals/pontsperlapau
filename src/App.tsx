@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { UserProvider } from './contexts/UserContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 import { LibraryProvider } from './contexts/LibraryContext';
-import { ClassProvider } from './contexts/ClassContext';
+import { ClassProvider, useClass } from './contexts/ClassContext';
 import { BookRequestProvider } from './contexts/BookRequestContext';
 import { FeedbackProvider } from './contexts/FeedbackContext';
 import { ActivityProvider } from './contexts/ActivityContext';
@@ -12,13 +12,10 @@ import { ToastProvider } from './contexts/ToastContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AdminDashboard from './pages/admin/Dashboard';
-import StaffDashboard from './pages/StaffDashboard';
-import StudentDashboard from './pages/StudentDashboard';
-import VisitorDashboard from './pages/VisitorDashboard';
 import PendingApproval from './pages/PendingApproval';
 import SetupPassword from './pages/SetupPassword';
 import ForgotPassword from './pages/ForgotPassword';
+import Dashboard from './pages/Dashboard';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode, roles: string[] }) {
@@ -98,25 +95,25 @@ function AppRouter() {
       
       <Route path="/admin/*" element={
         <ProtectedRoute roles={['admin']}>
-          <AdminDashboard />
+          <Dashboard />
         </ProtectedRoute>
       } />
       
       <Route path="/staff/*" element={
         <ProtectedRoute roles={['staff']}>
-          <StaffDashboard />
+          <Dashboard />
         </ProtectedRoute>
       } />
       
       <Route path="/student/*" element={
         <ProtectedRoute roles={['student']}>
-          <StudentDashboard />
+          <Dashboard />
         </ProtectedRoute>
       } />
       
       <Route path="/visitor/*" element={
         <ProtectedRoute roles={['visitor']}>
-          <VisitorDashboard />
+          <Dashboard />
         </ProtectedRoute>
       } />
     </Routes>

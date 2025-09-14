@@ -1,12 +1,12 @@
 import React from 'react';
-import { useUser } from '../contexts/UserContext';
+import { useUsers } from '../contexts/UserContext';
 import AdminDashboard from './admin/Dashboard';
 import StudentDashboard from './student/Dashboard';
 import StaffDashboard from './staff/Dashboard';
 import VisitorDashboard from './visitor/Dashboard';
 
 export default function Dashboard() {
-  const { currentUser } = useUser();
+  const { currentUser } = useUsers();
 
   if (!currentUser) {
     return (
