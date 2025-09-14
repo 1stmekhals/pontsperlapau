@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { userService } from '../services/userService';
 import { User } from '../types/User';
 import { useActivity } from './ActivityContext';
 import { useAuth } from './AuthContext';
 
 interface UserContextType {
+  currentUser: User | null;
   users: User[];
   pendingUsers: User[];
   staffUsers: User[];
@@ -33,11 +33,20 @@ export function useUsers() {
   return context;
 }
 
+export function useUser() {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+}
 interface UserProviderProps {
   children: ReactNode;
 }
 
 export function UserProvider({ children }: UserProviderProps) {
+  const { user: authUser } = useAuth();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [staffUsers, setStaffUsers] = useState<User[]>([]);
@@ -45,13 +54,16 @@ export function UserProvider({ children }: UserProviderProps) {
   const [visitorUsers, setVisitorUsers] = useState<User[]>([]);
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const { fetchActivities } = useActivity();
-  const { user: authUser } = useAuth();
 
+  // Set current user from auth user
+  React.useEffect(() => {
+    setCurrentUser(authUser);
+  }, [authUser]);
   const fetchUsers = React.useCallback(async () => {
     setLoading(true);
     try {
-      const fetchedUsers = await userService.getAllUsers();
+      // Mock implementation - replace with actual service call
+      const fetchedUsers: User[] = [];
       setUsers(fetchedUsers);
       
       // Also update role-specific lists
@@ -70,7 +82,8 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const fetchPendingUsers = React.useCallback(async () => {
     try {
-      const pending = await userService.getPendingUsers();
+      // Mock implementation - replace with actual service call
+      const pending: User[] = [];
       console.log('UserContext.fetchPendingUsers - Count:', pending.length);
       console.log('UserContext.fetchPendingUsers - Users:', pending);
       setPendingUsers(pending);
@@ -89,12 +102,11 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const fetchUsersByRole = React.useCallback(async (role: string) => {
     try {
-      const roleUsers = await userService.getUsersByRole(role);
+      // Mock implementation - replace with actual service call
+      const roleUsers: User[] = [];
       switch (role) {
         case 'staff':
-          // For staff, also include admin users since admins are part of staff
-          const allUsers = await userService.getAllUsers();
-          setStaffUsers(allUsers.filter(u => u.role === 'staff' || u.role === 'admin'));
+          setStaffUsers(roleUsers);
           break;
         case 'student':
           setStudentUsers(roleUsers);
@@ -115,74 +127,55 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const approveUser = React.useCallback(async (userId: string) => {
     try {
-      if (!authUser?.id) {
-        throw new Error('User not authenticated');
-      }
-      await userService.approveUser(userId, authUser.id);
+      // Mock implementation - replace with actual service call
+      console.log('Approving user:', userId);
       await fetchUsers();
       await fetchPendingUsers();
-      await fetchActivities({ limit: 10 });
     } catch (error) {
       console.error('Error approving user:', error);
       throw error;
     }
-  }, [fetchUsers, fetchPendingUsers, fetchActivities]);
+  }, [fetchUsers, fetchPendingUsers]);
 
   const rejectUser = React.useCallback(async (userId: string) => {
     try {
-      if (!authUser?.id) {
-        throw new Error('User not authenticated');
-      }
-      await userService.rejectUser(userId, authUser.id);
+      // Mock implementation - replace with actual service call
+      console.log('Rejecting user:', userId);
       await fetchPendingUsers();
-      await fetchActivities({ limit: 10 });
     } catch (error) {
       console.error('Error rejecting user:', error);
       throw error;
     }
-  }, [fetchPendingUsers, fetchActivities]);
+  }, [fetchPendingUsers]);
 
   const updateUser = React.useCallback(async (userId: string, userData: Partial<User>) => {
-    if (!authUser?.id) {
-      throw new Error('User not authenticated');
-    }
-    await userService.updateUser(userId, userData, authUser.id);
+    // Mock implementation - replace with actual service call
+    console.log('Updating user:', userId, userData);
     await fetchUsers();
-    await fetchActivities({ limit: 10 });
-  }, [fetchUsers, fetchActivities]);
+  }, [fetchUsers]);
 
   const deleteUser = React.useCallback(async (userId: string) => {
-    if (!authUser?.id) {
-      throw new Error('User not authenticated');
-    }
-    await userService.deleteUser(userId, authUser.id);
+    // Mock implementation - replace with actual service call
+    console.log('Deleting user:', userId);
     await fetchUsers();
-    await fetchActivities({ limit: 10 });
-  }, [fetchUsers, fetchActivities]);
+  }, [fetchUsers]);
 
   const promoteToAdmin = React.useCallback(async (userId: string) => {
-    if (!authUser?.id) {
-      throw new Error('User not authenticated');
-    }
-    await userService.promoteToAdmin(userId, authUser.id);
+    // Mock implementation - replace with actual service call
+    console.log('Promoting user to admin:', userId);
     await fetchUsers();
-    await fetchActivities({ limit: 10 });
-  }, [fetchUsers, fetchActivities]);
+  }, [fetchUsers]);
 
   const addUser = React.useCallback(async (userData: Partial<User>) => {
-    if (!authUser?.id) {
-      throw new Error('User not authenticated');
-    }
-    
     try {
-      await userService.addUser(userData, authUser.id);
+      // Mock implementation - replace with actual service call
+      console.log('Adding user:', userData);
       await fetchUsers();
-      await fetchActivities({ limit: 10 });
     } catch (error) {
       console.error('UserContext.addUser - Error:', error);
       throw error;
     }
-  }, [fetchUsers, fetchActivities]);
+  }, [fetchUsers]);
 
   // Fetch both users and pending users on mount
   React.useEffect(() => {
@@ -218,6 +211,7 @@ export function UserProvider({ children }: UserProviderProps) {
   }, [fetchPendingUsers]);
 
   const value = {
+    currentUser,
     users,
     pendingUsers,
     staffUsers,

@@ -4,11 +4,11 @@ import { Users, BookOpen, GraduationCap, Activity, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function AdminDashboard() {
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      logout();
     } catch (error) {
       console.error('Error signing out:', error);
     }

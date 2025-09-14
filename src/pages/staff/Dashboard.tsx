@@ -1,15 +1,13 @@
 import React from 'react';
 import { BookOpen, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useUser } from '../../contexts/UserContext';
 
 export default function StaffDashboard() {
-  const { signOut } = useAuth();
-  const { currentUser } = useUser();
+  const { logout, user } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      logout();
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -28,7 +26,7 @@ export default function StaffDashboard() {
             </div>
             <div className="flex items-center">
               <span className="mr-4 text-sm text-gray-700">
-                Welcome, {currentUser?.name}
+                Welcome, {user?.name}
               </span>
               <button
                 onClick={handleSignOut}
