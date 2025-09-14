@@ -17,7 +17,7 @@ import PendingApproval from './pages/PendingApproval';
 import SetupPassword from './pages/SetupPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import EmailConfirmed from './pages/EmailConfirmed';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/admin/Dashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import VisitorDashboard from './pages/VisitorDashboard';
