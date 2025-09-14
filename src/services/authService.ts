@@ -1,9 +1,33 @@
 import { supabase } from '../lib/supabase';
+import { isSupabaseReady } from '../lib/supabase';
 import { User } from '../types/User';
 
 export const authService = {
   async login(email: string, password: string) {
     console.log('🔐 AuthService.login - Attempting login for:', email);
+
+    // If Supabase is not configured, use mock authentication
+    if (!isSupabaseReady) {
+      console.log('🔧 AuthService.login - Using mock mode (Supabase not configured)');
+      
+      // Mock user data for demo purposes
+      const mockUser: User = {
+        id: 'mock-admin-id',
+        email: email,
+        role: 'admin',
+        status: 'approved',
+        name: 'Demo',
+        lastName: 'Admin',
+        fatherName: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      return {
+        user: mockUser,
+        token: `mock-token-${Date.now()}`
+      };
+    }
 
     try {
       // Query the users table to find the user
@@ -98,6 +122,12 @@ export const authService = {
   async register(userData: any) {
     console.log('📝 AuthService.register - Registering user:', userData);
     
+    // If Supabase is not configured, use mock registration
+    if (!isSupabaseReady) {
+      console.log('🔧 AuthService.register - Using mock mode (Supabase not configured)');
+      return { success: true };
+    }
+
     try {
       // Check if user already exists
       const { data: existingUser } = await supabase
@@ -149,6 +179,12 @@ export const authService = {
   async setupPassword(email: string, password: string) {
     console.log('🔐 AuthService.setupPassword - Setting up password for:', email);
 
+    // If Supabase is not configured, use mock setup
+    if (!isSupabaseReady) {
+      console.log('🔧 AuthService.setupPassword - Using mock mode (Supabase not configured)');
+      return { success: true };
+    }
+
     try {
       // Check if user exists in database
       const { data: userData, error: userError } = await supabase
@@ -196,6 +232,27 @@ export const authService = {
   async verifyToken(token: string) {
     console.log('🔍 AuthService.verifyToken - Verifying token');
     
+    // If Supabase is not configured, use mock verification
+    if (!isSupabaseReady) {
+      console.log('🔧 AuthService.verifyToken - Using mock mode (Supabase not configured)');
+      
+      if (token && token.startsWith('mock-token-')) {
+        const mockUser: User = {
+          id: 'mock-admin-id',
+          email: 'demo@example.com',
+          role: 'admin',
+          status: 'approved',
+          name: 'Demo',
+          lastName: 'Admin',
+          fatherName: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        return mockUser;
+      }
+      throw new Error('Invalid token');
+    }
+
     try {
       // Extract user ID from token (simple demo implementation)
       if (token && token.startsWith('token-')) {
